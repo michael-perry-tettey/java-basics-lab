@@ -1,4 +1,10 @@
-package com.amalitech.training.readingroom;
+package report;
+
+import domain.LendingItem;
+import domain.Library;
+import domain.Loan;
+import domain.Member;
+import exception.ItemAlreadyOnLoanException;
 
 import java.io.PrintStream;
 import java.util.Objects;

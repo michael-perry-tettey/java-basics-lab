@@ -1,4 +1,7 @@
-package com.amalitech.training.readingroom;
+package exception;
+
+import domain.LendingItem;
+import domain.Member;
 
 /**
  * Thrown when someone tries to borrow an item that is already on loan.
@@ -9,7 +12,7 @@ public final class ItemAlreadyOnLoanException extends RuntimeException {
     private final transient LendingItem item;
     private final transient Member currentBorrower;
 
-    ItemAlreadyOnLoanException(LendingItem item, Member currentBorrower) {
+    public ItemAlreadyOnLoanException(LendingItem item, Member currentBorrower) {
         super("\"" + item.getTitle() + "\" is already on loan to " + currentBorrower.getName());
         this.item = item;
         this.currentBorrower = currentBorrower;

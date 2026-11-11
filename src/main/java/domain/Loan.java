@@ -1,4 +1,4 @@
-package com.amalitech.training.readingroom;
+package domain;
 
 /**
  * One loan of one item to one member. It points at the actual item and

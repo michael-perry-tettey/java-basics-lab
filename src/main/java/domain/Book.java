@@ -1,4 +1,4 @@
-package com.amalitech.training.readingroom;
+package domain;
 
 /** A physical book. */
 public final class Book extends LendingItem {

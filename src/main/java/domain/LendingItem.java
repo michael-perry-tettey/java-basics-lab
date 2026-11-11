@@ -1,4 +1,4 @@
-package com.amalitech.training.readingroom;
+package domain;
 
 import java.util.Objects;
 
