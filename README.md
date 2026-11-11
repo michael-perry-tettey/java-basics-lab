@@ -17,14 +17,15 @@ The program is plain Java (no external dependencies). You need JDK 21.
 **With Maven:**
 
 ```bash
-mvn compile exec:java
+mvn compile
+mvn exec:java -Dexec.mainClass=LendingTracker
 ```
 
 **Or directly with the JDK:**
 
 ```bash
-javac -d target/classes src/main/java/com/amalitech/training/readingroom/*.java
-java -cp target/classes com.amalitech.training.readingroom.LendingTracker
+javac -d target/classes -sourcepath src/main/java src/main/java/LendingTracker.java
+java -cp target/classes LendingTracker
 ```
 
 **To run the tests:**
