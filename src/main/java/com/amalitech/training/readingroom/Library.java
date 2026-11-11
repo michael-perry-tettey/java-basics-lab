@@ -21,26 +21,12 @@ class Library {
         members.add(m);
     }
 
-    // Lend an item to a member. The loan period depends on the kind of item and member.
+    // Lend an item to a member. The item works out the loan period for that kind of member.
     public void borrow(Member m, LendingItem item) {
-        int loanDays = 0;
-        if (item.type == ItemType.BOOK) {
-            loanDays = 14;
-            if (m.kind == MemberKind.STUDENT) {
-                loanDays = 28; // students get longer loans
-            }
-            item.status = ItemStatus.ON_LOAN;
-            item.currentBorrower = m.name;
-            System.out.println("Lent \"" + item.title + "\" to " + m.name + " for " + loanDays + " days");
-        } else if (item.type == ItemType.AUDIO_KIT) {
-            loanDays = 7;
-            if (m.kind == MemberKind.STUDENT) {
-                loanDays = 14; // students get longer loans
-            }
-            item.status = ItemStatus.ON_LOAN;
-            item.currentBorrower = m.name;
-            System.out.println("Lent \"" + item.title + "\" to " + m.name + " for " + loanDays + " days");
-        }
+        int loanDays = item.loanDaysFor(m.kind);
+        item.status = ItemStatus.ON_LOAN;
+        item.currentBorrower = m.name;
+        System.out.println("Lent \"" + item.title + "\" to " + m.name + " for " + loanDays + " days");
         m.history.add("Borrowed " + item.title);
         loans.add(new Loan(m.name, item.title, loanDays));
     }
@@ -65,7 +51,7 @@ class Library {
         System.out.println("=== " + name + " - end of day ===");
         System.out.println("Items:");
         for (LendingItem i : items) {
-            System.out.println("  \"" + i.title + "\" (" + i.type + "): " + i.status
+            System.out.println("  \"" + i.title + "\" (" + i.typeLabel() + "): " + i.status
                     + (i.currentBorrower != null ? " - with " + i.currentBorrower : ""));
         }
         System.out.println("Active loans:");

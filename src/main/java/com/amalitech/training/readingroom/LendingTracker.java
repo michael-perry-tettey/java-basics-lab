@@ -6,8 +6,8 @@ public class LendingTracker {
     public static void main(String[] args) {
         Library lib = new Library("The Reading Room");
 
-        LendingItem novel = new LendingItem("Things Fall Apart", ItemType.BOOK);
-        LendingItem audioCourse = new LendingItem("French Audio Course", ItemType.AUDIO_KIT);
+        LendingItem novel = new Book("Things Fall Apart");
+        LendingItem audioCourse = new AudioKit("French Audio Course");
         lib.addItem(novel);
         lib.addItem(audioCourse);
 
