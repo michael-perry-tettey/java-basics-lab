@@ -1,3 +1,5 @@
+package com.amalitech.training.readingroom;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayOutputStream;
