@@ -68,6 +68,58 @@ class LibraryTest {
     }
 
     @Test
+    void anItemAlreadyOnLoanCannotBeBorrowedAgain() {
+        library.borrow(kofi, novel);
+
+        ItemAlreadyOnLoanException refusal =
+                assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(ama, novel));
+
+        assertSame(novel, refusal.getItem());
+        assertSame(kofi, refusal.getCurrentBorrower());
+    }
+
+    @Test
+    void aRefusedLoanChangesNothing() {
+        Loan kofisLoan = library.borrow(kofi, novel);
+
+        assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(ama, novel));
+
+        assertEquals(List.of(kofisLoan), library.getLoans());
+        assertEquals(List.of(kofisLoan), library.getActiveLoans());
+        assertEquals(Optional.of(kofi), library.currentBorrowerOf(novel));
+        assertTrue(ama.getHistory().isEmpty());
+        assertEquals(2, library.borrow(ama, new AudioKit("French Audio Course")).getId());
+    }
+
+    @Test
+    void theSameMemberCannotBorrowAnItemTheyAlreadyHave() {
+        library.borrow(kofi, novel);
+
+        assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(kofi, novel));
+    }
+
+    @Test
+    void anItemCanBeBorrowedAgainOnceItIsReturned() {
+        library.borrow(kofi, novel);
+        library.returnItem(novel);
+
+        Loan secondLoan = library.borrow(ama, novel);
+
+        assertTrue(secondLoan.isActive());
+        assertEquals(28, secondLoan.getLoanDays());
+        assertEquals(Optional.of(ama), library.currentBorrowerOf(novel));
+        assertEquals(2, library.getLoans().size());
+    }
+
+    @Test
+    void returningAnItemThatIsNotOnLoanDoesNothing() {
+        library.returnItem(novel);
+
+        assertEquals(ItemStatus.AVAILABLE, library.statusOf(novel));
+        assertTrue(library.getLoans().isEmpty());
+    }
+
+    @Test
     void returningOneCopyLeavesTheOtherCopyOfTheSameTitleOnLoan() {
         LendingItem secondCopy = new Book("Things Fall Apart");
         library.addItem(secondCopy);
@@ -84,7 +136,7 @@ class LibraryTest {
     @Test
     void aReturnedLoanCannotBeReturnedAgain() {
         Loan loan = library.borrow(kofi, novel);
-        loan.markReturned();
+        library.returnItem(novel);
 
         assertThrows(IllegalStateException.class, loan::markReturned);
     }
