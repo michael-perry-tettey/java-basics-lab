@@ -12,28 +12,24 @@ import exception.LendingException;
 import exception.MemberNotInLibraryException;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 class LibraryTest {
 
-    private Library library;
-    private Member kofi;
-    private Member ama;
-    private LendingItem novel;
-    private LendingItem audioCourse;
+    private final Member kofi = new Member("Kofi Mensah", MemberKind.STANDARD);
+    private final Member ama = new Member("Ama Owusu", MemberKind.STUDENT);
+    private final LendingItem novel = new Book("Things Fall Apart");
+    private final LendingItem audioCourse = new AudioKit("French Audio Course");
+    private final Library library = withMembersAndItems(new Library("Test library"));
 
-    @BeforeEach
-    void setUp() {
-        library = new Library("Test library");
-        kofi = new Member("Kofi Mensah", MemberKind.STANDARD);
-        ama = new Member("Ama Owusu", MemberKind.STUDENT);
-        novel = new Book("Things Fall Apart");
-        audioCourse = new AudioKit("French Audio Course");
-        library.addMember(kofi);
-        library.addMember(ama);
-        library.addItem(novel);
-        library.addItem(audioCourse);
+    // JUnit creates a new instance for every test, so each test starts from this state.
+    private Library withMembersAndItems(Library newLibrary) {
+        newLibrary.addMember(kofi);
+        newLibrary.addMember(ama);
+        newLibrary.addItem(novel);
+        newLibrary.addItem(audioCourse);
+        return newLibrary;
     }
 
     // Borrowing and returning
@@ -125,14 +121,14 @@ class LibraryTest {
     void theSameMemberCannotBorrowAnItemTheyAlreadyHave() {
         library.borrow(kofi, novel);
 
-        assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(kofi, novel));
+        assertFails(ItemAlreadyOnLoanException.class, () -> library.borrow(kofi, novel));
     }
 
     @Test
     void aRefusedLoanChangesNothing() {
         Loan kofisLoan = library.borrow(kofi, novel);
 
-        assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(ama, novel));
+        assertFails(ItemAlreadyOnLoanException.class, () -> library.borrow(ama, novel));
 
         assertEquals(List.of(kofisLoan), library.getLoans());
         assertEquals(List.of(kofisLoan), library.getActiveLoans());
@@ -181,16 +177,20 @@ class LibraryTest {
         library.borrow(kofi, novel);
         library.returnItem(novel);
 
-        assertThrows(ItemNotOnLoanException.class, () -> library.returnItem(novel));
+        assertFails(ItemNotOnLoanException.class, () -> library.returnItem(novel));
     }
 
     @Test
     void everyRefusalCanBeCaughtAsALendingException() {
         library.borrow(kofi, novel);
 
-        assertThrows(LendingException.class, () -> library.borrow(ama, novel));
-        assertThrows(LendingException.class, () -> library.borrow(kofi, new Book("Not ours")));
-        assertThrows(LendingException.class, () -> library.returnItem(audioCourse));
+        List<Class<?>> refusals = List.of(
+                assertThrows(LendingException.class, () -> library.borrow(ama, novel)).getClass(),
+                assertThrows(LendingException.class, () -> library.borrow(kofi, new Book("Not ours"))).getClass(),
+                assertThrows(LendingException.class, () -> library.returnItem(audioCourse)).getClass());
+
+        assertEquals(List.of(ItemAlreadyOnLoanException.class, ItemNotInLibraryException.class,
+                ItemNotOnLoanException.class), refusals);
     }
 
     @Test
@@ -220,24 +220,24 @@ class LibraryTest {
 
     @Test
     void theSameItemCannotBeAddedTwice() {
-        assertThrows(IllegalArgumentException.class, () -> library.addItem(novel));
+        assertFails(IllegalArgumentException.class, () -> library.addItem(novel));
 
         assertEquals(2, library.getItems().size());
     }
 
     @Test
     void theSameMemberCannotBeAddedTwice() {
-        assertThrows(IllegalArgumentException.class, () -> library.addMember(kofi));
+        assertFails(IllegalArgumentException.class, () -> library.addMember(kofi));
 
         assertEquals(2, library.getMembers().size());
     }
 
     @Test
     void aBlankTitleOrNameIsRejected() {
-        assertThrows(IllegalArgumentException.class, () -> new Book("   "));
-        assertThrows(IllegalArgumentException.class, () -> new AudioKit(""));
-        assertThrows(IllegalArgumentException.class, () -> new Member(" ", MemberKind.STANDARD));
-        assertThrows(IllegalArgumentException.class, () -> new Library(""));
+        assertFails(IllegalArgumentException.class, () -> new Book("   "));
+        assertFails(IllegalArgumentException.class, () -> new AudioKit(""));
+        assertFails(IllegalArgumentException.class, () -> new Member(" ", MemberKind.STANDARD));
+        assertFails(IllegalArgumentException.class, () -> new Library(""));
     }
 
     // Nothing can be changed from outside
@@ -247,17 +247,17 @@ class LibraryTest {
         Loan loan = library.borrow(kofi, novel);
         library.returnItem(novel);
 
-        assertThrows(IllegalStateException.class, loan::markReturned);
+        assertFails(IllegalStateException.class, loan::markReturned);
     }
 
     @Test
     void theLibrarysListsCannotBeChangedFromOutside() {
         library.borrow(kofi, novel);
 
-        assertThrows(UnsupportedOperationException.class, () -> library.getLoans().clear());
-        assertThrows(UnsupportedOperationException.class, () -> library.getActiveLoans().clear());
-        assertThrows(UnsupportedOperationException.class, () -> library.getItems().clear());
-        assertThrows(UnsupportedOperationException.class, () -> library.getMembers().clear());
+        assertFails(UnsupportedOperationException.class, () -> library.getLoans().clear());
+        assertFails(UnsupportedOperationException.class, () -> library.getActiveLoans().clear());
+        assertFails(UnsupportedOperationException.class, () -> library.getItems().clear());
+        assertFails(UnsupportedOperationException.class, () -> library.getMembers().clear());
         assertEquals(1, library.getLoans().size());
     }
 
@@ -265,6 +265,11 @@ class LibraryTest {
     void aMembersHistoryCannotBeChangedFromOutside() {
         library.borrow(kofi, novel);
 
-        assertThrows(UnsupportedOperationException.class, () -> kofi.getHistory().add("Borrowed nothing"));
+        assertFails(UnsupportedOperationException.class, () -> kofi.getHistory().add("Borrowed nothing"));
+    }
+
+    /** Checks that the action throws exactly the given kind of exception. */
+    private static void assertFails(Class<? extends Throwable> expected, Executable action) {
+        assertEquals(expected, assertThrows(Throwable.class, action).getClass());
     }
 }

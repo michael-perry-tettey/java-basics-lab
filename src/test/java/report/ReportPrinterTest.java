@@ -16,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Checks the wording of each message, one message per test, in the original's format. */
@@ -24,28 +23,22 @@ class ReportPrinterTest {
 
     private static final LocalDate BORROW_DATE = LocalDate.of(2026, 1, 10);
 
-    private Library library;
-    private Member kofi;
-    private Member ama;
-    private LendingItem novel;
-    private LendingItem audioCourse;
-    private ByteArrayOutputStream printed;
-    private ReportPrinter printer;
+    private final Member kofi = new Member("Kofi Mensah", MemberKind.STANDARD);
+    private final Member ama = new Member("Ama Owusu", MemberKind.STUDENT);
+    private final LendingItem novel = new Book("Things Fall Apart");
+    private final LendingItem audioCourse = new AudioKit("French Audio Course");
+    private final Library library = withMembersAndItems(new Library("The Reading Room",
+            Clock.fixed(BORROW_DATE.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC)));
+    private final ByteArrayOutputStream printed = new ByteArrayOutputStream();
+    private final ReportPrinter printer = new ReportPrinter(new PrintStream(printed, true, StandardCharsets.UTF_8));
 
-    @BeforeEach
-    void setUp() {
-        Clock fixedClock = Clock.fixed(BORROW_DATE.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC);
-        library = new Library("The Reading Room", fixedClock);
-        kofi = new Member("Kofi Mensah", MemberKind.STANDARD);
-        ama = new Member("Ama Owusu", MemberKind.STUDENT);
-        novel = new Book("Things Fall Apart");
-        audioCourse = new AudioKit("French Audio Course");
-        library.addMember(kofi);
-        library.addMember(ama);
-        library.addItem(novel);
-        library.addItem(audioCourse);
-        printed = new ByteArrayOutputStream();
-        printer = new ReportPrinter(new PrintStream(printed, true, StandardCharsets.UTF_8));
+    // JUnit creates a new instance for every test, so each test starts from this state.
+    private Library withMembersAndItems(Library newLibrary) {
+        newLibrary.addMember(kofi);
+        newLibrary.addMember(ama);
+        newLibrary.addItem(novel);
+        newLibrary.addItem(audioCourse);
+        return newLibrary;
     }
 
     @Test
