@@ -20,6 +20,11 @@ public final class ReportPrinter {
                 + " for " + loan.getLoanDays() + " days");
     }
 
+    public void printRefused(Member member, ItemAlreadyOnLoanException refusal) {
+        out.println("Cannot lend \"" + refusal.getItem().getTitle() + "\" to " + member.getName()
+                + ": already on loan to " + refusal.getCurrentBorrower().getName());
+    }
+
     public void printReturned(LendingItem item) {
         out.println("Returned \"" + item.getTitle() + "\"");
     }

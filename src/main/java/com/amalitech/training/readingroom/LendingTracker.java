@@ -23,9 +23,13 @@ public class LendingTracker {
         library.returnItem(audioCourse);
         printer.printReturned(audioCourse);
 
-        // ... and the sort of thing that worries them:
-        // the novel is already out with Kofi, but nothing stops this
-        printer.printLent(library.borrow(ama, novel));
+        // ... and the sort of thing that used to worry them:
+        // the novel is already out with Kofi, so the library refuses to lend it again
+        try {
+            printer.printLent(library.borrow(ama, novel));
+        } catch (ItemAlreadyOnLoanException refusal) {
+            printer.printRefused(ama, refusal);
+        }
 
         printer.printEndOfDay(library);
     }
