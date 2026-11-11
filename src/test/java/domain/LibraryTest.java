@@ -7,6 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import exception.ItemAlreadyOnLoanException;
+import exception.ItemNotInLibraryException;
+import exception.ItemNotOnLoanException;
+import exception.LendingException;
+import exception.MemberNotInLibraryException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +22,7 @@ class LibraryTest {
     private Member kofi;
     private Member ama;
     private LendingItem novel;
+    private LendingItem audioCourse;
 
     @BeforeEach
     void setUp() {
@@ -25,10 +30,14 @@ class LibraryTest {
         kofi = new Member("Kofi Mensah", MemberKind.STANDARD);
         ama = new Member("Ama Owusu", MemberKind.STUDENT);
         novel = new Book("Things Fall Apart");
+        audioCourse = new AudioKit("French Audio Course");
         library.addMember(kofi);
         library.addMember(ama);
         library.addItem(novel);
+        library.addItem(audioCourse);
     }
+
+    // Borrowing and returning
 
     @Test
     void borrowingCreatesAnActiveLoanForThatMemberAndItem() {
@@ -51,9 +60,14 @@ class LibraryTest {
 
     @Test
     void loanNumbersStartAtOneInEachLibrary() {
+        Library anotherLibrary = new Library("Another library");
+        LendingItem anotherBook = new Book("Another book");
+        anotherLibrary.addMember(kofi);
+        anotherLibrary.addItem(anotherBook);
+
         assertEquals(1, library.borrow(kofi, novel).getId());
-        assertEquals(2, library.borrow(ama, new AudioKit("French Audio Course")).getId());
-        assertEquals(1, new Library("Another library").borrow(kofi, new Book("Another book")).getId());
+        assertEquals(2, library.borrow(ama, audioCourse).getId());
+        assertEquals(1, anotherLibrary.borrow(kofi, anotherBook).getId());
     }
 
     @Test
@@ -66,37 +80,6 @@ class LibraryTest {
         assertEquals(ItemStatus.AVAILABLE, library.statusOf(novel));
         assertEquals(Optional.empty(), library.currentBorrowerOf(novel));
         assertTrue(library.getActiveLoans().isEmpty());
-    }
-
-    @Test
-    void anItemAlreadyOnLoanCannotBeBorrowedAgain() {
-        library.borrow(kofi, novel);
-
-        ItemAlreadyOnLoanException refusal =
-                assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(ama, novel));
-
-        assertSame(novel, refusal.getItem());
-        assertSame(kofi, refusal.getCurrentBorrower());
-    }
-
-    @Test
-    void aRefusedLoanChangesNothing() {
-        Loan kofisLoan = library.borrow(kofi, novel);
-
-        assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(ama, novel));
-
-        assertEquals(List.of(kofisLoan), library.getLoans());
-        assertEquals(List.of(kofisLoan), library.getActiveLoans());
-        assertEquals(Optional.of(kofi), library.currentBorrowerOf(novel));
-        assertTrue(ama.getHistory().isEmpty());
-        assertEquals(2, library.borrow(ama, new AudioKit("French Audio Course")).getId());
-    }
-
-    @Test
-    void theSameMemberCannotBorrowAnItemTheyAlreadyHave() {
-        library.borrow(kofi, novel);
-
-        assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(kofi, novel));
     }
 
     @Test
@@ -113,14 +96,6 @@ class LibraryTest {
     }
 
     @Test
-    void returningAnItemThatIsNotOnLoanDoesNothing() {
-        library.returnItem(novel);
-
-        assertEquals(ItemStatus.AVAILABLE, library.statusOf(novel));
-        assertTrue(library.getLoans().isEmpty());
-    }
-
-    @Test
     void returningOneCopyLeavesTheOtherCopyOfTheSameTitleOnLoan() {
         LendingItem secondCopy = new Book("Things Fall Apart");
         library.addItem(secondCopy);
@@ -134,8 +109,149 @@ class LibraryTest {
         assertEquals(Optional.of(ama), library.currentBorrowerOf(secondCopy));
     }
 
+    // One loan per item
+
     @Test
-    void aReturnedLoanCannotBeReturnedAgain() {
+    void anItemAlreadyOnLoanCannotBeBorrowedAgain() {
+        library.borrow(kofi, novel);
+
+        ItemAlreadyOnLoanException refusal =
+                assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(ama, novel));
+
+        assertSame(novel, refusal.getItem());
+        assertSame(kofi, refusal.getCurrentBorrower());
+    }
+
+    @Test
+    void theSameMemberCannotBorrowAnItemTheyAlreadyHave() {
+        library.borrow(kofi, novel);
+
+        assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(kofi, novel));
+    }
+
+    @Test
+    void aRefusedLoanChangesNothing() {
+        Loan kofisLoan = library.borrow(kofi, novel);
+
+        assertThrows(ItemAlreadyOnLoanException.class, () -> library.borrow(ama, novel));
+
+        assertEquals(List.of(kofisLoan), library.getLoans());
+        assertEquals(List.of(kofisLoan), library.getActiveLoans());
+        assertEquals(Optional.of(kofi), library.currentBorrowerOf(novel));
+        assertTrue(ama.getHistory().isEmpty());
+        assertEquals(2, library.borrow(ama, audioCourse).getId());
+    }
+
+    // Other refusals
+
+    @Test
+    void anItemThatWasNeverAddedCannotBeBorrowed() {
+        LendingItem stranger = new Book("Not ours");
+
+        ItemNotInLibraryException refusal =
+                assertThrows(ItemNotInLibraryException.class, () -> library.borrow(kofi, stranger));
+
+        assertSame(stranger, refusal.getItem());
+        assertTrue(library.getLoans().isEmpty());
+        assertTrue(kofi.getHistory().isEmpty());
+    }
+
+    @Test
+    void someoneWhoIsNotAMemberCannotBorrow() {
+        Member visitor = new Member("Yaw Boateng", MemberKind.STANDARD);
+
+        MemberNotInLibraryException refusal =
+                assertThrows(MemberNotInLibraryException.class, () -> library.borrow(visitor, novel));
+
+        assertSame(visitor, refusal.getMember());
+        assertEquals(ItemStatus.AVAILABLE, library.statusOf(novel));
+        assertTrue(visitor.getHistory().isEmpty());
+    }
+
+    @Test
+    void anItemThatIsNotOnLoanCannotBeReturned() {
+        ItemNotOnLoanException refusal =
+                assertThrows(ItemNotOnLoanException.class, () -> library.returnItem(novel));
+
+        assertSame(novel, refusal.getItem());
+        assertEquals(ItemStatus.AVAILABLE, library.statusOf(novel));
+    }
+
+    @Test
+    void anItemCannotBeReturnedTwice() {
+        library.borrow(kofi, novel);
+        library.returnItem(novel);
+
+        assertThrows(ItemNotOnLoanException.class, () -> library.returnItem(novel));
+    }
+
+    @Test
+    void everyRefusalCanBeCaughtAsALendingException() {
+        library.borrow(kofi, novel);
+
+        assertThrows(LendingException.class, () -> library.borrow(ama, novel));
+        assertThrows(LendingException.class, () -> library.borrow(kofi, new Book("Not ours")));
+        assertThrows(LendingException.class, () -> library.returnItem(audioCourse));
+    }
+
+    @Test
+    void anItemKindWithNoLoanPeriodCannotBeLent() {
+        LendingItem broken = new LendingItem("Mistyped e-loan") {
+            @Override
+            public String typeLabel() {
+                return "E_LOAN";
+            }
+
+            @Override
+            protected int baseLoanDays() {
+                return 0;
+            }
+        };
+        library.addItem(broken);
+
+        IllegalStateException error =
+                assertThrows(IllegalStateException.class, () -> library.borrow(kofi, broken));
+
+        assertTrue(error.getMessage().contains("E_LOAN items must be lent for at least 1 day"));
+        assertEquals(ItemStatus.AVAILABLE, library.statusOf(broken));
+        assertTrue(library.getLoans().isEmpty());
+    }
+
+    // Adding items and members
+
+    @Test
+    void theSameItemCannotBeAddedTwice() {
+        assertThrows(IllegalArgumentException.class, () -> library.addItem(novel));
+
+        assertEquals(2, library.getItems().size());
+    }
+
+    @Test
+    void theSameMemberCannotBeAddedTwice() {
+        assertThrows(IllegalArgumentException.class, () -> library.addMember(kofi));
+
+        assertEquals(2, library.getMembers().size());
+    }
+
+    @Test
+    void aBlankTitleOrNameIsRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new Book("   "));
+        assertThrows(IllegalArgumentException.class, () -> new AudioKit(""));
+        assertThrows(IllegalArgumentException.class, () -> new Member(" ", MemberKind.STANDARD));
+        assertThrows(IllegalArgumentException.class, () -> new Library(""));
+    }
+
+    @Test
+    void itemsAndMembersCanBeFoundByTheirId() {
+        assertEquals(Optional.of(novel), library.findItem(novel.getId()));
+        assertEquals(Optional.of(kofi), library.findMember(kofi.getId()));
+        assertFalse(library.findItem(-1).isPresent());
+    }
+
+    // Nothing can be changed from outside
+
+    @Test
+    void aReturnedLoanCannotBeMarkedReturnedAgain() {
         Loan loan = library.borrow(kofi, novel);
         library.returnItem(novel);
 
@@ -143,7 +259,7 @@ class LibraryTest {
     }
 
     @Test
-    void theLoanListCannotBeChangedFromOutside() {
+    void theLibrarysListsCannotBeChangedFromOutside() {
         library.borrow(kofi, novel);
 
         assertThrows(UnsupportedOperationException.class, () -> library.getLoans().clear());
@@ -158,19 +274,5 @@ class LibraryTest {
         library.borrow(kofi, novel);
 
         assertThrows(UnsupportedOperationException.class, () -> kofi.getHistory().add("Borrowed nothing"));
-    }
-
-    @Test
-    void itemsAndMembersCanBeFoundByTheirId() {
-        assertEquals(Optional.of(novel), library.findItem(novel.getId()));
-        assertEquals(Optional.of(kofi), library.findMember(kofi.getId()));
-        assertFalse(library.findItem(-1).isPresent());
-    }
-
-    @Test
-    void addingTheSameItemTwiceKeepsOneEntry() {
-        library.addItem(novel);
-
-        assertEquals(1, library.getItems().size());
     }
 }

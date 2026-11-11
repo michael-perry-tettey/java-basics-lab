@@ -29,6 +29,10 @@ class DueDateTest {
         ama = new Member("Ama Owusu", MemberKind.STUDENT);
         novel = new Book("Things Fall Apart");
         audioCourse = new AudioKit("French Audio Course");
+        library.addMember(kofi);
+        library.addMember(ama);
+        library.addItem(novel);
+        library.addItem(audioCourse);
     }
 
     @Test

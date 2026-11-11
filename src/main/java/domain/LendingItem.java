@@ -1,7 +1,5 @@
 package domain;
 
-import java.util.Objects;
-
 /**
  * Something the library lends. Each kind of item is its own subclass and
  * states its own loan rules, so adding a new kind does not mean editing
@@ -18,7 +16,7 @@ public abstract class LendingItem {
     private final String title;
 
     protected LendingItem(String title) {
-        this.title = Objects.requireNonNull(title, "title");
+        this.title = Checks.requireText(title, "title");
         this.id = nextId++;
     }
 

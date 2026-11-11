@@ -16,7 +16,7 @@ public final class Member {
     private final List<String> history = new ArrayList<>();
 
     public Member(String name, MemberKind kind) {
-        this.name = Objects.requireNonNull(name, "name");
+        this.name = Checks.requireText(name, "name");
         this.kind = Objects.requireNonNull(kind, "kind");
         this.id = nextId++;
     }
