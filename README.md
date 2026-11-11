@@ -24,8 +24,14 @@ mvn exec:java -Dexec.mainClass=LendingTracker
 **Or directly with the JDK:**
 
 ```bash
-javac -d target/classes src/main/java/LendingTracker.java
+javac -d target/classes -sourcepath src/main/java src/main/java/LendingTracker.java
 java -cp target/classes LendingTracker
+```
+
+**To run the tests:**
+
+```bash
+mvn test
 ```
 
 Run it first, before you change anything, so you can see how it currently
