@@ -1,5 +1,6 @@
-package com.amalitech.training.readingroom;
+package domain;
 
+import exception.ItemAlreadyOnLoanException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,13 +13,18 @@ import java.util.Optional;
 /**
  * The library's items, members and loans. This is the only place a loan
  * can be created or closed; everything it hands out is read-only.
+ *
+ * An item can only ever be on one loan at a time. The active loans are
+ * kept by item, one per item, and {@link #borrow} refuses to lend an item
+ * that already has one.
  */
 public final class Library {
 
     private final String name;
     private final Map<Integer, LendingItem> items = new LinkedHashMap<>();
     private final Map<Integer, Member> members = new LinkedHashMap<>();
-    private final List<Loan> loans = new ArrayList<>();
+    private final Map<LendingItem, Loan> activeLoans = new LinkedHashMap<>();
+    private final List<Loan> loanHistory = new ArrayList<>();
     private int nextLoanId = 1;
 
     public Library(String name) {
@@ -37,40 +43,46 @@ public final class Library {
         members.putIfAbsent(member.getId(), member);
     }
 
-    /** Lends an item to a member. The item works out the loan period for that kind of member. */
+    /**
+     * Lends an item to a member. The item works out the loan period for
+     * that kind of member.
+     *
+     * @throws ItemAlreadyOnLoanException if the item is already on loan;
+     *         in that case nothing is recorded
+     */
     public Loan borrow(Member member, LendingItem item) {
         Objects.requireNonNull(member, "member");
         Objects.requireNonNull(item, "item");
+
+        Loan existing = activeLoans.get(item);
+        if (existing != null) {
+            throw new ItemAlreadyOnLoanException(item, existing.getMember());
+        }
+
         Loan loan = new Loan(nextLoanId++, member, item, item.loanDaysFor(member.getKind()));
-        loans.add(loan);
+        activeLoans.put(item, loan);
+        loanHistory.add(loan);
         member.recordBorrowed(item);
         return loan;
     }
 
-    /** Takes an item back, closing the active loans for that exact item. */
+    /** Takes an item back, closing its active loan if it has one. */
     public void returnItem(LendingItem item) {
         Objects.requireNonNull(item, "item");
-        for (Loan loan : loans) {
-            if (loan.isActive() && loan.getItem() == item) {
-                loan.markReturned();
-            }
+        Loan loan = activeLoans.remove(item);
+        if (loan != null) {
+            loan.markReturned();
         }
     }
 
-    /** Whether the item is out, worked out from the loans and stored nowhere else. */
+    /** Whether the item is out, worked out from the active loans and stored nowhere else. */
     public ItemStatus statusOf(LendingItem item) {
-        return currentBorrowerOf(item).isPresent() ? ItemStatus.ON_LOAN : ItemStatus.AVAILABLE;
+        return activeLoans.containsKey(item) ? ItemStatus.ON_LOAN : ItemStatus.AVAILABLE;
     }
 
-    /** The member who most recently borrowed the item and has not returned it, if any. */
+    /** The member who has the item now, if it is on loan. */
     public Optional<Member> currentBorrowerOf(LendingItem item) {
-        Member borrower = null;
-        for (Loan loan : loans) {
-            if (loan.isActive() && loan.getItem() == item) {
-                borrower = loan.getMember();
-            }
-        }
-        return Optional.ofNullable(borrower);
+        return Optional.ofNullable(activeLoans.get(item)).map(Loan::getMember);
     }
 
     public Optional<LendingItem> findItem(int id) {
@@ -93,11 +105,11 @@ public final class Library {
 
     /** Every loan, active or returned, in the order it was made. Read-only. */
     public List<Loan> getLoans() {
-        return Collections.unmodifiableList(loans);
+        return Collections.unmodifiableList(loanHistory);
     }
 
     /** The loans that have not been returned, in the order they were made. */
     public List<Loan> getActiveLoans() {
-        return loans.stream().filter(Loan::isActive).toList();
+        return loanHistory.stream().filter(Loan::isActive).toList();
     }
 }

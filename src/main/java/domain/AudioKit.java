@@ -1,4 +1,4 @@
-package com.amalitech.training.readingroom;
+package domain;
 
 /** An audio kit, lent for a shorter period than a book. */
 public final class AudioKit extends LendingItem {

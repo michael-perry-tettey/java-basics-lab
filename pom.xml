@@ -10,7 +10,7 @@
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <exec.mainClass>com.amalitech.training.readingroom.LendingTracker</exec.mainClass>
+        <exec.mainClass>LendingTracker</exec.mainClass>
     </properties>
     <dependencies>
         <dependency>

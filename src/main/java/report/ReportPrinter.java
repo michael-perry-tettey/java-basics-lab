@@ -1,4 +1,10 @@
-package com.amalitech.training.readingroom;
+package report;
+
+import domain.LendingItem;
+import domain.Library;
+import domain.Loan;
+import domain.Member;
+import exception.ItemAlreadyOnLoanException;
 
 import java.io.PrintStream;
 import java.util.Objects;
@@ -18,6 +24,11 @@ public final class ReportPrinter {
     public void printLent(Loan loan) {
         out.println("Lent \"" + loan.getItem().getTitle() + "\" to " + loan.getMember().getName()
                 + " for " + loan.getLoanDays() + " days");
+    }
+
+    public void printRefused(Member member, ItemAlreadyOnLoanException refusal) {
+        out.println("Cannot lend \"" + refusal.getItem().getTitle() + "\" to " + member.getName()
+                + ": already on loan to " + refusal.getCurrentBorrower().getName());
     }
 
     public void printReturned(LendingItem item) {

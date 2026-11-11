@@ -1,4 +1,4 @@
-package com.amalitech.training.readingroom;
+package domain;
 
 /** The kinds of library member. Students are allowed longer loans. */
 public enum MemberKind {
