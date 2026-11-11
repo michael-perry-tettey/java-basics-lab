@@ -1,36 +1,47 @@
 package com.amalitech.training.readingroom;
 
+import java.util.Objects;
+
 /**
  * Something the library lends. Each kind of item is its own subclass and
  * states its own loan rules, so adding a new kind does not mean editing
  * the rules of the others.
+ *
+ * An item never changes after it is created. Whether it is on loan is
+ * known only to the {@link Library}.
  */
-abstract class LendingItem {
-    public String title;
-    public ItemStatus status;
-    public String currentBorrower;
-    public int id;
-    static int counter = 1;
+public abstract class LendingItem {
+
+    private static int nextId = 1;
+
+    private final int id;
+    private final String title;
 
     protected LendingItem(String title) {
-        this.id = counter;
-        counter++;
-        this.title = title;
-        this.status = ItemStatus.AVAILABLE;
+        this.title = Objects.requireNonNull(title, "title");
+        this.id = nextId++;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     /** The label the end-of-day report prints for this kind of item. */
-    abstract String typeLabel();
+    public abstract String typeLabel();
 
     /** How many days a standard member may keep this kind of item. */
-    abstract int baseLoanDays();
+    protected abstract int baseLoanDays();
 
     /**
      * How many days the given kind of member may keep this item: the base
      * period times the member kind's multiplier. A kind of item with
      * different rules can replace this calculation.
      */
-    int loanDaysFor(MemberKind memberKind) {
+    public int loanDaysFor(MemberKind memberKind) {
         return baseLoanDays() * memberKind.loanMultiplier();
     }
 }

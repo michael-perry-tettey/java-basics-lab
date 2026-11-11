@@ -1,19 +1,45 @@
 package com.amalitech.training.readingroom;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-class Member {
-    public String name;
-    public MemberKind kind;
-    public int id;
-    public List<String> history = new ArrayList<>();
-    static int counter = 1;
+/** A library member. */
+public final class Member {
+
+    private static int nextId = 1;
+
+    private final int id;
+    private final String name;
+    private final MemberKind kind;
+    private final List<String> history = new ArrayList<>();
 
     public Member(String name, MemberKind kind) {
-        this.id = counter;
-        counter++;
-        this.name = name;
-        this.kind = kind;
+        this.name = Objects.requireNonNull(name, "name");
+        this.kind = Objects.requireNonNull(kind, "kind");
+        this.id = nextId++;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public MemberKind getKind() {
+        return kind;
+    }
+
+    /** One entry per borrow, oldest first. Read-only. */
+    public List<String> getHistory() {
+        return Collections.unmodifiableList(history);
+    }
+
+    /** Called by the library when it lends this member an item. */
+    void recordBorrowed(LendingItem item) {
+        history.add("Borrowed " + item.getTitle());
     }
 }

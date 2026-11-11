@@ -4,26 +4,29 @@ package com.amalitech.training.readingroom;
 public class LendingTracker {
 
     public static void main(String[] args) {
-        Library lib = new Library("The Reading Room");
+        Library library = new Library("The Reading Room");
+        ReportPrinter printer = new ReportPrinter(System.out);
 
         LendingItem novel = new Book("Things Fall Apart");
         LendingItem audioCourse = new AudioKit("French Audio Course");
-        lib.addItem(novel);
-        lib.addItem(audioCourse);
+        library.addItem(novel);
+        library.addItem(audioCourse);
 
         Member kofi = new Member("Kofi Mensah", MemberKind.STANDARD);
         Member ama = new Member("Ama Owusu", MemberKind.STUDENT);
-        lib.addMember(kofi);
-        lib.addMember(ama);
+        library.addMember(kofi);
+        library.addMember(ama);
 
         // a normal afternoon
-        lib.borrow(kofi, novel);
-        lib.borrow(ama, audioCourse);
-        lib.returnItem(audioCourse);
+        printer.printLent(library.borrow(kofi, novel));
+        printer.printLent(library.borrow(ama, audioCourse));
+        library.returnItem(audioCourse);
+        printer.printReturned(audioCourse);
 
         // ... and the sort of thing that worries them:
-        lib.borrow(ama, novel); // the novel is already out with Kofi, but nothing stops this
+        // the novel is already out with Kofi, but nothing stops this
+        printer.printLent(library.borrow(ama, novel));
 
-        lib.printReport();
+        printer.printEndOfDay(library);
     }
 }
