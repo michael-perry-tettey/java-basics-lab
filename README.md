@@ -4,18 +4,24 @@ A small program The Reading Room community library uses to track what is
 borrowed. This repository holds the rebuilt version of the original
 single-file tracker.
 
-- [DIAGNOSIS.md](DIAGNOSIS.md): what was wrong with the original and the
-  structure planned before any code changed.
+- [DIAGNOSIS.md](DIAGNOSIS.md): what was wrong with the original, ranked by
+  risk to the library, and a diagram of the structure planned. It was
+  committed in `4917ba8`, straight after the unchanged starter (`5e29aab`) and
+  before any code changed.
 - This file: how to run it, and the design notes for the rebuild.
 
 ## Running it
 
-You need JDK 21 and Maven.
+You need JDK 21 and Maven. `pom.xml` declares both the Java level
+(`maven.compiler.release` 21) and the main class (`exec.mainClass`
+`LendingTracker`), so no extra arguments are needed:
 
 ```bash
-mvn compile
-mvn exec:java -Dexec.mainClass=LendingTracker
+mvn compile exec:java
 ```
+
+The original command, `mvn exec:java -Dexec.mainClass=LendingTracker`, also
+still works.
 
 Or directly with the JDK:
 
@@ -30,13 +36,30 @@ To run the tests:
 mvn test
 ```
 
-To add the list of due dates after the usual report, optionally as of a
-given day:
+To add the list of due dates after the usual report:
 
 ```bash
-mvn exec:java -Dexec.mainClass=LendingTracker -Dexec.args="--due-dates"
-mvn exec:java -Dexec.mainClass=LendingTracker -Dexec.args="--due-dates 2026-12-25"
+mvn compile exec:java -Dexec.args="--due-dates"
 ```
+
+To see what would be overdue on a given day, add the date in the form
+`<yyyy-mm-dd>`:
+
+```bash
+mvn compile exec:java -Dexec.args="--due-dates <yyyy-mm-dd>"
+```
+
+The view lists the active loans with the earliest due date first. A loan is
+due on the borrow date plus its loan period, and is overdue from the day after
+that. For example, if the novel was borrowed on 11 November 2026 and the date
+given is 25 December 2026:
+
+```text
+Due dates (as of 2026-12-25):
+  Loan #1: "Things Fall Apart" -> Kofi Mensah, due 2026-11-25 (OVERDUE by 30 days)
+```
+
+A date in any other form is reported with a message, not a stack trace.
 
 ## How the code is organised
 
@@ -44,7 +67,7 @@ mvn exec:java -Dexec.mainClass=LendingTracker -Dexec.args="--due-dates 2026-12-2
 src/main/java/
 ├── LendingTracker.java    starts the program, where the original file was
 ├── domain/                the lending rules and records
-│     Library              the items, members and loans; the only place a loan is made or closed
+│     Library              items, members and loans; the only place loans change
 │     Loan, LoanStatus     one loan and whether it is active or returned
 │     Member, MemberKind   a member, and standard or student
 │     LendingItem          what every lendable item has in common
@@ -73,6 +96,9 @@ An item can only be on one loan at a time. Three things enforce it together:
 - **A check before anything is recorded.** `Library.borrow` looks the item up
   first. If it is already on loan it throws `ItemAlreadyOnLoanException` and
   records nothing: no loan, no history entry, no loan number used.
+  `LibraryTest.aRefusedLoanChangesNothing` checks exactly that: after a
+  refused second borrow, the loan list, the active loans, the borrower and
+  the member's history are unchanged, and the next loan still gets number 2.
 - **No way round the check.** Every field is private. Creating a loan,
   marking it returned and adding to a member's history can only be done from
   inside the `domain` folder, and `Library` is the only class there that does
@@ -80,17 +106,39 @@ An item can only be on one loan at a time. Three things enforce it together:
 
 ### Choices, and what I chose them over
 
-| Decision | Chosen | Instead of | Why |
-| --- | --- | --- | --- |
-| Kinds of item | A class per kind (`Book`, `AudioKit`) extending `LendingItem` | An enum of types with an `if` or `switch` in `Library` | A new kind is one new file. With an enum, every place that branches on the type has to be found and edited, which is how the original broke. |
-| `LendingItem` | An abstract class | An interface | Every item needs the same id and title handling. An abstract class holds it once; an interface would make each new kind repeat it. |
-| Loan period | Base days on the item times a multiplier on the member kind | The four numbers written out per type | "Students get double" is written once. A kind of item with different rules replaces the calculation in its own class. |
-| Whether an item is on loan | Worked out from the active loans | A status field on the item | A stored copy can drift from the loans. This was the root cause of the double loan. |
-| Finding an item's loan | A map keyed by item | Scanning a list, or a heap | The rule needs "does this item have a loan?" answered directly. A heap answers "which is smallest?", which is not the question. |
-| Refusing a loan | An unchecked exception | A checked exception, or returning `null` or `false` | A return value can be ignored, which is how the original failed silently. A checked exception would force a `try` around every call, including ones that cannot fail. |
-| Printing | A separate `ReportPrinter` | Printing inside `Library` | The rules can be tested without reading the console, and changing a message cannot change who has what. |
-| Folders | By concern: `domain`, `exception`, `report` | One package, or a folder per kind of class | It is clear where a change belongs. `Library`, `Loan` and `Member` stay together because the protection above depends on it. |
-| Today's date | A clock given to `Library` | Reading the system date inside the code | Tests can fix the date, so they do not depend on the day they run. |
+- **Kinds of item.** Chosen: A class per kind (`Book`, `AudioKit`) extending
+  `LendingItem`. Instead of: An enum of types with an `if` or `switch` in
+  `Library`. A new kind is one new file. With an enum, every place that
+  branches on the type has to be found and edited, which is how the original
+  broke.
+- **`LendingItem`.** Chosen: An abstract class. Instead of: An interface.
+  Every item needs the same id and title handling. An abstract class holds it
+  once; an interface would make each new kind repeat it.
+- **Loan period.** Chosen: Base days on the item times a multiplier on the
+  member kind. Instead of: The four numbers written out per type. "Students
+  get double" is written once. A kind of item with different rules replaces
+  the calculation in its own class.
+- **Whether an item is on loan.** Chosen: Worked out from the active loans.
+  Instead of: A status field on the item. A stored copy can drift from the
+  loans. This was the root cause of the double loan.
+- **Finding an item's loan.** Chosen: A map keyed by item. Instead of:
+  Scanning a list, or a heap. The rule needs "does this item have a loan?"
+  answered directly. A heap answers "which is smallest?", which is not the
+  question.
+- **Refusing a loan.** Chosen: An unchecked exception. Instead of: A checked
+  exception, or returning `null` or `false`. A return value can be ignored,
+  which is how the original failed silently. A checked exception would force a
+  `try` around every call, including ones that cannot fail.
+- **Printing.** Chosen: A separate `ReportPrinter`. Instead of: Printing
+  inside `Library`. The rules can be tested without reading the console, and
+  changing a message cannot change who has what.
+- **Folders.** Chosen: By concern: `domain`, `exception`, `report`. Instead
+  of: One package, or a folder per kind of class. It is clear where a change
+  belongs. `Library`, `Loan` and `Member` stay together because the protection
+  above depends on it.
+- **Today's date.** Chosen: A clock given to `Library`. Instead of: Reading
+  the system date inside the code. Tests can fix the date, so they do not
+  depend on the day they run.
 
 Two patterns I considered and left out, because they would add structure
 without solving a problem this program has:
@@ -196,23 +244,47 @@ changes in that one way only. The diagnosis found other requests the original
 accepted that leave the records wrong (sections 2.1 and 2.6). The program's
 own run never makes any of them, so the output is unaffected, but leaving
 them open would have left other routes to bad records. Each is now refused
-before anything is recorded, and each has a test:
+before anything is recorded.
 
-| Request | Original | Now |
-| --- | --- | --- |
-| Lend an item that was never added to the library | Loan recorded for an item the library does not list | `ItemNotInLibraryException` |
-| Lend to someone who was never added as a member | Loan recorded | `MemberNotInLibraryException` |
-| Return an item that is not on loan | "Returned" printed, nothing checked | `ItemNotOnLoanException` |
-| Add the same item or member twice | Listed twice | `IllegalArgumentException` |
-| A missing or blank title or name | Accepted and printed as "null" or blank | Rejected when the item, member or library is created |
-| An item kind whose loan period comes to less than one day | Could not be written; an unknown type got a silent 0-day loan | `IllegalStateException` naming the item kind |
+Each row is: the request, what the original did, what happens now, and the
+test in `LibraryTest` that covers it.
+
+- **Lend an item that was never added to the library.** Original: a loan was
+  recorded for an item the library does not list. Now:
+  `ItemNotInLibraryException`. Test: `anItemThatWasNeverAddedCannotBeBorrowed`.
+- **Lend to someone who was never added as a member.** Original: the loan was
+  recorded. Now: `MemberNotInLibraryException`. Test:
+  `someoneWhoIsNotAMemberCannotBorrow`.
+- **Return an item that is not on loan.** Original: "Returned" was printed and
+  nothing was checked. Now: `ItemNotOnLoanException`. Tests:
+  `anItemThatIsNotOnLoanCannotBeReturned`, `anItemCannotBeReturnedTwice`.
+- **Add the same item or member twice.** Original: listed twice. Now:
+  `IllegalArgumentException`. Tests: `theSameItemCannotBeAddedTwice`,
+  `theSameMemberCannotBeAddedTwice`.
+- **A missing or blank title or name.** Original: accepted, and printed as
+  "null" or blank. Now: rejected when the item, member or library is created.
+  Test: `aBlankTitleOrNameIsRejected`.
+- **An item kind whose loan period comes to less than one day.** Original:
+  could not be written; an unknown type got a silent 0-day loan. Now:
+  `IllegalStateException` naming the item kind. Test:
+  `anItemKindWithNoLoanPeriodCannotBeLent`.
 
 The four lending refusals share a parent, `LendingException`, so a caller can
-handle any refusal in one place. The last three rows are mistakes in the
-calling code, not requests from a member, so they use Java's standard
-exceptions.
+handle any refusal in one place; `everyRefusalCanBeCaughtAsALendingException`
+checks that. The last three are mistakes in the calling code, not requests
+from a member, so they use Java's standard exceptions.
 
-The last row protects the change that is coming: a volunteer writing the
+`main` catches `ItemAlreadyOnLoanException` specifically, not a broad
+`Exception`, so an unexpected error still stops the program instead of being
+hidden. It prints a one-line, readable message in place of the "Lent" line:
+
+```text
+Cannot lend "Things Fall Apart" to Ama Owusu: already on loan to Kofi Mensah
+```
+
+`ReportPrinterTest.refusedMessage` checks that wording.
+
+The last one protects the change that is coming: a volunteer writing the
 e-loan class who mistypes the loan period finds out the first time that item
 is lent, with a message that names the item kind.
 
