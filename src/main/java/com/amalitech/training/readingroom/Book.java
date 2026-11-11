@@ -1,19 +1,19 @@
 package com.amalitech.training.readingroom;
 
 /** A physical book. */
-class Book extends LendingItem {
+public final class Book extends LendingItem {
 
-    Book(String title) {
+    public Book(String title) {
         super(title);
     }
 
     @Override
-    String typeLabel() {
+    public String typeLabel() {
         return "BOOK";
     }
 
     @Override
-    int baseLoanDays() {
+    protected int baseLoanDays() {
         return 14;
     }
 }

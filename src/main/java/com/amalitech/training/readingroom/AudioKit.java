@@ -1,19 +1,19 @@
 package com.amalitech.training.readingroom;
 
 /** An audio kit, lent for a shorter period than a book. */
-class AudioKit extends LendingItem {
+public final class AudioKit extends LendingItem {
 
-    AudioKit(String title) {
+    public AudioKit(String title) {
         super(title);
     }
 
     @Override
-    String typeLabel() {
+    public String typeLabel() {
         return "AUDIO_KIT";
     }
 
     @Override
-    int baseLoanDays() {
+    protected int baseLoanDays() {
         return 7;
     }
 }
