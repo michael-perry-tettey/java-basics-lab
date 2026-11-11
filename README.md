@@ -163,7 +163,7 @@ Every feature of the original still exists:
 
 The evidence:
 
-- `OriginalAfternoonTest` runs the same afternoon as the original program,
+- `AfternoonTest` runs the same afternoon as the original program,
   step by step, and checks the result of each step: the same loan numbers and
   loan periods, the same return, and the same end-of-day state, except that
   the second loan of the novel is refused.

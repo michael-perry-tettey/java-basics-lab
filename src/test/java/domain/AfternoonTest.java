@@ -10,13 +10,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
- * Runs the same afternoon as the original program, step by step, and checks
- * the outcome of each step.
+ * Checks that the application keeps the original program's behaviour. It
+ * runs the same afternoon as the original, step by step, and checks the
+ * outcome of each step.
  *
  * Every step gives the same result as the original except the last borrow,
  * which the original allowed and which is now refused.
  */
-class OriginalAfternoonTest {
+class AfternoonTest {
 
     @Test
     void theOriginalAfternoonGivesTheSameResultsExceptThatTheDoubleLoanIsRefused() {
