@@ -7,7 +7,9 @@ import domain.Member;
  * Thrown when someone tries to borrow an item that is already on loan.
  * An item can only ever be on one loan at a time.
  */
-public final class ItemAlreadyOnLoanException extends RuntimeException {
+public final class ItemAlreadyOnLoanException extends LendingException {
+
+    private static final long serialVersionUID = 1L;
 
     private final transient LendingItem item;
     private final transient Member currentBorrower;

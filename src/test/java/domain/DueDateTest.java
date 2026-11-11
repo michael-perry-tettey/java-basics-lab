@@ -8,27 +8,26 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class DueDateTest {
 
     private static final LocalDate BORROW_DATE = LocalDate.of(2026, 1, 10);
 
-    private Library library;
-    private Member kofi;
-    private Member ama;
-    private LendingItem novel;
-    private LendingItem audioCourse;
+    private final Member kofi = new Member("Kofi Mensah", MemberKind.STANDARD);
+    private final Member ama = new Member("Ama Owusu", MemberKind.STUDENT);
+    private final LendingItem novel = new Book("Things Fall Apart");
+    private final LendingItem audioCourse = new AudioKit("French Audio Course");
+    private final Library library = withMembersAndItems(new Library("Test library",
+            Clock.fixed(BORROW_DATE.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC)));
 
-    @BeforeEach
-    void setUp() {
-        Clock fixedClock = Clock.fixed(BORROW_DATE.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC);
-        library = new Library("Test library", fixedClock);
-        kofi = new Member("Kofi Mensah", MemberKind.STANDARD);
-        ama = new Member("Ama Owusu", MemberKind.STUDENT);
-        novel = new Book("Things Fall Apart");
-        audioCourse = new AudioKit("French Audio Course");
+    // JUnit creates a new instance for every test, so each test starts from this state.
+    private Library withMembersAndItems(Library newLibrary) {
+        newLibrary.addMember(kofi);
+        newLibrary.addMember(ama);
+        newLibrary.addItem(novel);
+        newLibrary.addItem(audioCourse);
+        return newLibrary;
     }
 
     @Test
