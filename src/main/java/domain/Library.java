@@ -1,9 +1,12 @@
 package domain;
 
 import exception.ItemAlreadyOnLoanException;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +23,11 @@ import java.util.Optional;
  */
 public final class Library {
 
+    private static final Comparator<Loan> SOONEST_DUE_FIRST =
+            Comparator.comparing(Loan::getDueDate).thenComparingInt(Loan::getId);
+
     private final String name;
+    private final Clock clock;
     private final Map<Integer, LendingItem> items = new LinkedHashMap<>();
     private final Map<Integer, Member> members = new LinkedHashMap<>();
     private final Map<LendingItem, Loan> activeLoans = new LinkedHashMap<>();
@@ -28,11 +35,22 @@ public final class Library {
     private int nextLoanId = 1;
 
     public Library(String name) {
+        this(name, Clock.systemDefaultZone());
+    }
+
+    /** Creates a library that reads today's date from the given clock, so tests can fix the date. */
+    public Library(String name, Clock clock) {
         this.name = Objects.requireNonNull(name, "name");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     public String getName() {
         return name;
+    }
+
+    /** Today's date, as this library sees it. */
+    public LocalDate today() {
+        return LocalDate.now(clock);
     }
 
     public void addItem(LendingItem item) {
@@ -44,8 +62,8 @@ public final class Library {
     }
 
     /**
-     * Lends an item to a member. The item works out the loan period for
-     * that kind of member.
+     * Lends an item to a member, starting today. The item works out the
+     * loan period for that kind of member.
      *
      * @throws ItemAlreadyOnLoanException if the item is already on loan;
      *         in that case nothing is recorded
@@ -59,7 +77,7 @@ public final class Library {
             throw new ItemAlreadyOnLoanException(item, existing.getMember());
         }
 
-        Loan loan = new Loan(nextLoanId++, member, item, item.loanDaysFor(member.getKind()));
+        Loan loan = new Loan(nextLoanId++, member, item, item.loanDaysFor(member.getKind()), today());
         activeLoans.put(item, loan);
         loanHistory.add(loan);
         member.recordBorrowed(item);
@@ -111,5 +129,10 @@ public final class Library {
     /** The loans that have not been returned, in the order they were made. */
     public List<Loan> getActiveLoans() {
         return loanHistory.stream().filter(Loan::isActive).toList();
+    }
+
+    /** The loans that have not been returned, with the earliest due date first. */
+    public List<Loan> getActiveLoansByDueDate() {
+        return activeLoans.values().stream().sorted(SOONEST_DUE_FIRST).toList();
     }
 }

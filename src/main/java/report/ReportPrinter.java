@@ -7,6 +7,9 @@ import domain.Member;
 import exception.ItemAlreadyOnLoanException;
 
 import java.io.PrintStream;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -19,6 +22,33 @@ public final class ReportPrinter {
 
     public ReportPrinter(PrintStream out) {
         this.out = Objects.requireNonNull(out, "out");
+    }
+
+    /**
+     * Lists the active loans with the earliest due date first, and marks the
+     * ones that are overdue as of the given date. This is a separate view;
+     * the end-of-day report is unchanged.
+     */
+    public void printDueDates(Library library, LocalDate asOf) {
+        out.println();
+        out.println("Due dates (as of " + asOf + "):");
+        List<Loan> loans = library.getActiveLoansByDueDate();
+        if (loans.isEmpty()) {
+            out.println("  No active loans");
+            return;
+        }
+        for (Loan loan : loans) {
+            out.println("  Loan #" + loan.getId() + ": \"" + loan.getItem().getTitle() + "\" -> "
+                    + loan.getMember().getName() + ", due " + loan.getDueDate() + overdueNote(loan, asOf));
+        }
+    }
+
+    private static String overdueNote(Loan loan, LocalDate asOf) {
+        if (!loan.isOverdueOn(asOf)) {
+            return "";
+        }
+        long days = ChronoUnit.DAYS.between(loan.getDueDate(), asOf);
+        return " (OVERDUE by " + days + (days == 1 ? " day)" : " days)");
     }
 
     public void printLent(Loan loan) {

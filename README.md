@@ -37,6 +37,25 @@ mvn test
 Run it first, before you change anything, so you can see how it currently
 behaves. Look carefully at the end-of-day report.
 
+## Seeing when loans are due
+
+Each loan records the date it was made, and its due date is worked out from
+that date and the loan period. Start the program with `--due-dates` to add a
+list of the active loans after the usual report, with the earliest due date
+first:
+
+```bash
+mvn exec:java -Dexec.mainClass=LendingTracker -Dexec.args="--due-dates"
+```
+
+Add a date to see what would be overdue on that day:
+
+```bash
+mvn exec:java -Dexec.mainClass=LendingTracker -Dexec.args="--due-dates 2026-12-25"
+```
+
+Without the option, the program prints exactly what it always has.
+
 ## What to hand in
 
 See the lab brief for the full list: a written diagnosis, your rebuilt version

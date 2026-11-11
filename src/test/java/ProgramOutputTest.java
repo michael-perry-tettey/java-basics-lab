@@ -1,4 +1,5 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -60,12 +61,25 @@ class ProgramOutputTest {
         assertEquals(11, expected.size());
     }
 
-    private static String runProgramAndCaptureOutput() {
+    @Test
+    void dueDatesOptionAddsAViewAfterTheUnchangedReport() throws IOException {
+        String expected = normaliseLineEndings(Files.readString(EXPECTED, StandardCharsets.UTF_8));
+
+        String actual = normaliseLineEndings(runProgramAndCaptureOutput("--due-dates", "2999-01-01"));
+
+        assertTrue(actual.startsWith(expected), "the normal output must come first, unchanged");
+        String addedView = actual.substring(expected.length());
+        assertTrue(addedView.startsWith("\nDue dates (as of 2999-01-01):\n"), addedView);
+        assertTrue(addedView.contains("Loan #1: \"Things Fall Apart\" -> Kofi Mensah, due "), addedView);
+        assertTrue(addedView.contains("(OVERDUE by "), addedView);
+    }
+
+    private static String runProgramAndCaptureOutput(String... args) {
         PrintStream realOut = System.out;
         ByteArrayOutputStream captured = new ByteArrayOutputStream();
         try (PrintStream capture = new PrintStream(captured, true, StandardCharsets.UTF_8)) {
             System.setOut(capture);
-            LendingTracker.main(new String[0]);
+            LendingTracker.main(args);
         } finally {
             System.setOut(realOut);
         }

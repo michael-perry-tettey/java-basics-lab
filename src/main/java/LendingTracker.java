@@ -5,10 +5,14 @@ import domain.Library;
 import domain.Member;
 import domain.MemberKind;
 import exception.ItemAlreadyOnLoanException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import report.ReportPrinter;
 
 // The Reading Room - community library lending tracker
 public class LendingTracker {
+
+    private static final String DUE_DATES_OPTION = "--due-dates";
 
     public static void main(String[] args) {
         Library library = new Library("The Reading Room");
@@ -39,5 +43,25 @@ public class LendingTracker {
         }
 
         printer.printEndOfDay(library);
+
+        printDueDatesIfAsked(args, library, printer);
+    }
+
+    /**
+     * Prints the due-dates view only when the program is started with
+     * --due-dates, optionally followed by a date such as 2026-12-25 to see
+     * what would be overdue on that day. Without the option the program
+     * prints exactly what it always has.
+     */
+    private static void printDueDatesIfAsked(String[] args, Library library, ReportPrinter printer) {
+        if (args.length == 0 || !DUE_DATES_OPTION.equals(args[0])) {
+            return;
+        }
+        try {
+            LocalDate asOf = args.length > 1 ? LocalDate.parse(args[1]) : library.today();
+            printer.printDueDates(library, asOf);
+        } catch (DateTimeParseException badDate) {
+            System.err.println("Cannot read the date \"" + args[1] + "\". Use the form 2026-12-25.");
+        }
     }
 }
