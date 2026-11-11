@@ -1,7 +1,6 @@
 package domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -239,13 +238,6 @@ class LibraryTest {
         assertThrows(IllegalArgumentException.class, () -> new AudioKit(""));
         assertThrows(IllegalArgumentException.class, () -> new Member(" ", MemberKind.STANDARD));
         assertThrows(IllegalArgumentException.class, () -> new Library(""));
-    }
-
-    @Test
-    void itemsAndMembersCanBeFoundByTheirId() {
-        assertEquals(Optional.of(novel), library.findItem(novel.getId()));
-        assertEquals(Optional.of(kofi), library.findMember(kofi.getId()));
-        assertFalse(library.findItem(-1).isPresent());
     }
 
     // Nothing can be changed from outside

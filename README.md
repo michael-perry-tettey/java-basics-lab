@@ -239,7 +239,7 @@ something that tells the volunteers which items to chase. The list is sorted
 when it is printed. A priority queue was considered and not used: at this
 library's size sorting is simpler and just as fast.
 
-The other thing left for the next person is the test suite: 46 tests that run
+The other thing left for the next person is the test suite: 45 tests that run
 in a few seconds with `mvn test` and on every pull request. The original had
 none, which is why volunteers were told not to touch the code.
 
@@ -267,6 +267,3 @@ none, which is why volunteers were told not to touch the code.
   outside can change it, but ids are unique across the whole program, not per
   library.
 - Nothing is saved between runs, as in the original.
-- `Library.findItem` and `Library.findMember` are not used by the scripted run
-  in `main`. They are there, with tests, because looking things up by id is
-  the first thing a menu or a screen would need.

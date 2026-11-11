@@ -144,14 +144,6 @@ public final class Library {
         return Optional.ofNullable(activeLoans.get(item)).map(Loan::getMember);
     }
 
-    public Optional<LendingItem> findItem(int id) {
-        return Optional.ofNullable(items.get(id));
-    }
-
-    public Optional<Member> findMember(int id) {
-        return Optional.ofNullable(members.get(id));
-    }
-
     /** The items in the order they were added. Read-only. */
     public Collection<LendingItem> getItems() {
         return Collections.unmodifiableCollection(items.values());
